@@ -1,0 +1,67 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import List
+from app.utils import get_stock_price
+from openai import OpenAI
+from typing import List, Literal
+
+import os
+
+app = FastAPI()
+#openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai = OpenAI(api_key="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")
+
+
+class StockItem(BaseModel):
+    symbol: str
+    quantity: int
+    buy_price: float
+
+
+class PortfolioRequest(BaseModel):
+    risk_rating: Literal["Low", "Medium", "High"]
+    sectors: List[str]
+    esg_preference: bool
+    portfolio: List[StockItem]
+
+
+
+@app.post("/analyze-portfolio-gpt")
+async def analyze_portfolio_gpt(request: PortfolioRequest):
+    lines = []
+    for item in request.portfolio:
+        current_price = get_stock_price(item.symbol)
+        lines.append(
+            f"- {item.symbol}: {item.quantity} shares bought at ${item.buy_price}, current price ${current_price}"
+        )
+
+    # NEW: Sector and ESG context
+    sector_list = ", ".join(request.sectors)
+    esg_text = "The user prefers ESG-compliant investments." if request.esg_preference else "ESG compliance is not required."
+
+    # UPDATED Prompt with additional user context
+    prompt = (
+            f"The customer has a {request.risk_rating} risk tolerance.\n"
+            f"Preferred sectors: {sector_list}.\n"
+            f"{esg_text}\n\n"
+            f"Here is their current stock portfolio:\n\n"
+            + "\n".join(lines)
+            + "\n\nPlease:\n"
+              "- Provide buy/sell/hold recommendations for each stock.\n"
+              "- Suggest up to 3 new stocks or ETFs that align with the user's preferences.\n"
+              "- Include reasoning for each suggested investment.\n"
+              "- Provide your recommendation summary first in plain English.\n"
+              "Then on a new line, return a JSON array like:\n"
+              "[{\"symbol\": \"AAPL\", \"action\": \"BUY\", \"reason\": \"Strong growth in tech.\"}, ...]\n"
+              "Only include new stock suggestions in the JSON."
+    )
+
+    response = openai.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "You are a financial assistant who gives risk-aware portfolio suggestions."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return {"summary": response.choices[0].message.content}

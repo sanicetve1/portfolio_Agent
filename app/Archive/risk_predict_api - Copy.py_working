@@ -1,0 +1,67 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
+import joblib
+import pandas as pd
+import os
+
+app = FastAPI()
+
+# Define input schema
+class Stock(BaseModel):
+    symbol: str
+    quantity: int
+    buy_price: float
+
+class PortfolioRequest(BaseModel):
+    portfolio: List[Stock]
+
+# Load model (make sure model file is in same directory or correct path)
+model_path = "risk_model.pkl"
+if os.path.exists(model_path):
+    model = joblib.load(model_path)
+else:
+    model = None
+    print("⚠️ Risk model not found.")
+
+# Risk prediction endpoint
+@app.post("/predict-risk")
+def predict_risk(data: PortfolioRequest):
+    if not model:
+        raise HTTPException(status_code=500, detail="Model not loaded.")
+
+    try:
+        df = pd.DataFrame([s.dict() for s in data.portfolio])
+        df['sector'] = df['symbol'].apply(get_sector)  # Add a sector if needed
+
+        # Dummy encoding or feature engineering example:
+        sectors = pd.get_dummies(df['sector'], prefix="sector")
+        final_df = pd.concat([sectors], axis=1).sum().to_frame().T
+
+        print("📊 Input DF:")
+        print(df)
+
+        print("🧮 Sector Encoded:")
+        print(final_df)
+
+        prediction = model.predict(final_df)[0]
+
+        print("✅ Prediction:")
+        print(prediction)
+        return {"risk_rating": prediction}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Risk prediction failed: {str(e)}")
+
+# Optional: simple sector mapper
+def get_sector(symbol):
+    mapping = {
+        "AAPL": "Technology",
+        "TSLA": "Technology",
+        "XOM": "Natural Resources",
+        "JPM": "Banking",
+        "PFE": "Healthcare",
+        "DUK": "Utilities",
+        "KO": "F&B"
+    }
+    return mapping.get(symbol, "Other")

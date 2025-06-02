@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+yfinance
+openai
+streamlit
+requests
+pydantic
+matplotlib
+PyPDF2
+scikit-learn
+joblib
+

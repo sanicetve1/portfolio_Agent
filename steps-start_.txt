@@ -1,0 +1,7 @@
+ C:\Users\San\Desktop\Yportfolio\yfinance_portfolio> venv\scripts\activate
+
+uvicorn app.main:app --reload
+	
+
+ streamlit run .\agent_runner.py
+

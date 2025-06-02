@@ -1,0 +1,23 @@
+app/
+├── agent_runner.py            # Streamlit frontend (user UI)
+├── risk_predict_api.py        # FastAPI backend (ML & GPT endpoints)
+├── utils.py                   # Stock price fetcher
+├── plot.py                    # Chart plotting for 6-month trend
+├── pdf_parser.py              # Extract portfolio from uploaded PDF
+├── portfolio_analyzer.py      # (Optional) Suggests buy/sell based on live price
+├── models.py                  # DB schema for storing GPT analysis (to integrate)
+├── risk_model.pkl             # Trained ML model for risk prediction
+
+
+
+
+| File Name                   | Role / Purpose                                                                                                                                                             |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`agent_runner.py`**       | ✅ **Main UI (Streamlit frontend)**. Gathers portfolio input, sends it to API endpoints, runs the AI agent using LangChain tools.                                           |
+| **`risk_predict_api.py`**   | ✅ **FastAPI backend**. Provides `/predict-risk` endpoint to serve ML risk prediction using `risk_model.pkl`.                                                               |
+| **`utils.py`**              | ✅ Utility file used by frontend. Currently only has `get_stock_price()` using `yfinance`.                                                                                  |
+| **`plot.py`**               | ✅ Chart utility for 6-month stock price trend. Used in `agent_runner.py` via LangChain Tool.                                                                               |
+| **`pdf_parser.py`**         | ✅ Used to extract portfolio from uploaded PDF using regex and PyPDF2.                                                                                                      |
+| **`portfolio_analyzer.py`** | ✅ Provides simple buy/hold/sell advice using live stock prices. Not clearly integrated in `agent_runner.py` yet but could be a backend utility or used in GPT suggestions. |
+| **`models.py`**             | ✅ Sets up a SQLite DB with SQLAlchemy to store GPT recommendations. Appears intended for logging/saving agent results. Not yet fully used.                                 |
+| **`risk_model.pkl`**        | ✅ Trained RandomForestClassifier model used by `risk_predict_api.py`.                                                                                                      |

@@ -1,0 +1,86 @@
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import List
+from openai import OpenAI
+import os
+import json
+
+app = FastAPI()
+#openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai = OpenAI(api_key="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")
+
+
+class StockItem(BaseModel):
+    symbol: str
+    quantity: float
+    buy_price: float
+
+class PortfolioRequest(BaseModel):
+    risk_rating: str
+    sectors: List[str]
+    esg_preference: bool
+    portfolio: List[StockItem]
+
+@app.post("/analyze-portfolio-gpt")
+async def analyze_portfolio_gpt(request: PortfolioRequest):
+    lines = [f"- {item.symbol}: {item.quantity} shares bought at ${item.buy_price}" for item in request.portfolio]
+
+    prompt = (
+        f"The user has a {request.risk_rating} risk tolerance.\n"
+        f"Preferred sectors: {', '.join(request.sectors)}.\n"
+        f"ESG preference: {'Yes' if request.esg_preference else 'No'}.\n"
+        f"Here is their current portfolio:\n" +
+        "\n".join(lines) +
+        "\n\nSuggest up to 3 stocks with action (BUY, SELL, HOLD) and a reason."
+    )
+
+    function_schema = [
+        {
+            "name": "suggest_portfolio_adjustments",
+            "description": "Returns investment suggestions based on portfolio and preferences.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "suggestions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "symbol": {"type": "string"},
+                                "action": {"type": "string", "enum": ["BUY", "SELL", "HOLD"]},
+                                "reason": {"type": "string"}
+                            },
+                            "required": ["symbol", "action", "reason"]
+                        }
+                    }
+                },
+                "required": ["suggestions"]
+            }
+        }
+    ]
+
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a helpful portfolio advisor. Return structured recommendations only."},
+                {"role": "user", "content": prompt}
+            ],
+            functions=function_schema,
+            function_call="auto"
+        )
+
+        if response.choices[0].finish_reason == "function_call":
+            function_args = json.loads(response.choices[0].message.function_call.arguments)
+            suggestions = function_args.get("suggestions", [])
+        else:
+            suggestions = []
+
+        return {
+            "summary": "GPT structured suggestions returned.",
+            "suggestions": suggestions
+        }
+
+    except Exception as e:
+        return {"summary": f"Error during GPT call: {str(e)}", "suggestions": []}

@@ -1,0 +1,227 @@
+import streamlit as st
+import requests
+import json
+import re
+from app.plot import get_price_forecast_plot
+from app.pdf_parser import extract_text_from_pdf, parse_portfolio_from_text
+
+#------------pdf ----
+st.markdown("### 📄 Upload Portfolio PDF (Optional)")
+pdf_file = st.file_uploader("Upload a portfolio PDF", type=["pdf"])
+
+portfolio_data = []
+
+if pdf_file is not None:
+    extracted_text = extract_text_from_pdf(pdf_file)
+    portfolio_data = parse_portfolio_from_text(extracted_text)
+
+    st.success("✅ Portfolio extracted from PDF.")
+    st.json(portfolio_data)
+else:
+    # Fallback to manual JSON input
+    st.markdown("### Or Enter Your Portfolio Manually (JSON)")
+    example_json = """
+    [
+      {"symbol": "AAPL", "quantity": 10, "buy_price": 150},
+      {"symbol": "TSLA", "quantity": 5, "buy_price": 600}
+    ]
+    """
+    portfolio_input = st.text_area("Portfolio JSON", example_json, height=150)
+    if portfolio_input:
+        portfolio_data = json.loads(portfolio_input)
+
+#---------pdf----
+
+
+st.title("Portfolio Risk & Recommendation with GPT")
+
+st.markdown("Enter your portfolio as JSON (symbol, quantity, buy_price):")
+
+example_json = """
+[
+  {"symbol": "AAPL", "quantity": 10, "buy_price": 150},
+  {"symbol": "TSLA", "quantity": 5, "buy_price": 600}
+]
+"""
+st.markdown("### Portfolio Preferences")
+
+st.markdown("### Portfolio Preferences")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    risk_rating = st.selectbox("Risk Rating", ["Low", "Medium", "High"])
+    esg_preference = st.checkbox("Prefer ESG-compliant?")
+
+with col2:
+    sectors = st.multiselect(
+        "Preferred Sectors",
+        ["Technology", "Natural Resources", "Banking", "F&B", "Healthcare", "Utilities"]
+    )
+
+
+
+
+portfolio_input = st.text_area("Portfolio JSON", example_json, height=150)
+
+''''
+if st.button("Analyze Portfolio"):
+    try:
+        portfolio_data = json.loads(portfolio_input)
+
+        from app.portfolio_analyzer import analyze_portfolio
+        import pandas as pd
+
+        # Analyze current portfolio
+        portfolio_analysis = analyze_portfolio(portfolio_data)
+
+        if portfolio_analysis:
+            df_analysis = pd.DataFrame(portfolio_analysis)
+            df_analysis = df_analysis[["symbol", "quantity", "buy_price", "current_price", "profit_loss"]]
+            st.subheader("🧾 Portfolio Analysis (Before Recommendation)")
+            st.dataframe(df_analysis)
+
+        response = requests.post(
+            "http://localhost:8000/analyze-portfolio-gpt",
+            json={
+                "risk_rating": risk_rating,
+                "sectors": sectors,
+                "esg_preference": esg_preference,
+                "portfolio": portfolio_data
+            },
+            timeout=30
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            st.subheader("GPT Summary & Recommendation")
+            st.markdown(result["summary"])
+
+            # --------- Display Buy/Sell/Hold Actions in Table ----------
+            if response.status_code == 200:
+                result = response.json()
+                full_output = result["summary"]
+
+                # Extract JSON block from GPT response
+                import re
+                import pandas as pd
+
+                json_text = ""
+                try:
+                    # Match the first JSON array in the text
+                    json_match = re.search(r"\[\s*{.*?}\s*\]", full_output, re.DOTALL)
+                    if json_match:
+                        json_text = json_match.group(0)
+                        suggestions = json.loads(json_text)
+
+                        # Display the structured recommendations table
+                        df = pd.DataFrame(suggestions)
+                        st.subheader("📋 Suggested Actions")
+                        st.dataframe(df)
+
+                        # Save for graph
+                        suggested_symbols = [s["symbol"] for s in suggestions]
+                    else:
+                        st.warning("⚠️ No JSON suggestions found in GPT response.")
+                        suggested_symbols = []
+
+                except Exception as e:
+                    st.warning(f"⚠️ Could not parse GPT JSON block: {e}")
+                    suggested_symbols = []
+
+                # Display GPT's natural summary (remove JSON block if found)
+                summary_text = full_output.replace(json_text, "").strip()
+                if summary_text:
+                    st.subheader("🧠 GPT Summary & Recommendation")
+                    st.markdown(summary_text)
+
+            if recommendations:
+                df = pd.DataFrame(recommendations)
+                st.subheader("📋 Suggested Actions")
+                st.table(df)
+
+            # Extract symbols from GPT output (e.g. look for capitalized tickers)
+            suggested_symbols = list(set(re.findall(r"\b[A-Z]{2,5}\b", result["summary"])))
+            suggested_symbols = [s for s in suggested_symbols if s not in [item["symbol"] for item in portfolio_data]]
+
+            # Plot graph only if GPT suggests new stocks
+            if suggested_symbols:
+                chart = get_price_forecast_plot(suggested_symbols)
+                st.subheader("📈 Suggested Stocks — 6-Month Trend")
+                st.image(f"data:image/png;base64,{chart}")
+
+        else:
+            st.error(f"API Error: {response.status_code} - {response.text}")
+
+    except Exception as e:
+        st.error(f"Error: {e}")
+
+
+
+
+# Simulate suggested symbols or extract them from GPT response
+#suggested_symbols = ["AAPL", "MSFT"]  # Replace with actual GPT suggestions if needed
+
+#chart = get_price_forecast_plot(suggested_symbols)
+#st.subheader("📈 Suggested Stock Trends (Past Year)")
+#st.image(f"data:image/png;base64,{chart}")
+
+'''
+
+if st.button("Analyze Portfolio") and portfolio_data:
+    try:
+        response = requests.post(
+            "http://localhost:8000/analyze-portfolio-gpt",
+            json={
+                "risk_rating": risk_rating,
+                "sectors": sectors,
+                "esg_preference": esg_preference,
+                "portfolio": portfolio_data
+            },
+            timeout=30
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            full_output = result["summary"]
+
+            # Extract JSON from GPT response (same as before)
+            import re
+            import pandas as pd
+
+            json_text = ""
+            try:
+                json_match = re.search(r"\[\s*{.*?}\s*\]", full_output, re.DOTALL)
+                if json_match:
+                    json_text = json_match.group(0)
+                    suggestions = json.loads(json_text)
+                    df = pd.DataFrame(suggestions)
+                    st.subheader("📋 Suggested Actions")
+                    st.dataframe(df)
+                    suggested_symbols = [s["symbol"] for s in suggestions]
+                else:
+                    st.warning("⚠️ No JSON suggestions found.")
+                    suggested_symbols = []
+
+            except Exception as e:
+                st.warning(f"⚠️ Failed to parse GPT suggestions: {e}")
+                suggested_symbols = []
+
+            # Show GPT summary (minus JSON)
+            summary_text = full_output.replace(json_text, "").strip()
+            if summary_text:
+                st.subheader("🧠 GPT Summary & Recommendation")
+                st.markdown(summary_text)
+
+            # Graph for all new suggested stocks
+            if suggested_symbols:
+                chart = get_price_forecast_plot(suggested_symbols)
+                st.subheader("📈 Suggested Stocks — 6-Month Trend")
+                st.image(f"data:image/png;base64,{chart}")
+
+        else:
+            st.error(f"API Error: {response.status_code} - {response.text}")
+
+    except Exception as e:
+        st.error(f"❌ Error analyzing portfolio: {e}")
+
