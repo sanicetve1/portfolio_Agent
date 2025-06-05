@@ -9,12 +9,12 @@ from collections import Counter
 from langchain.agents import initialize_agent, Tool
 from langchain_openai import ChatOpenAI
 from langchain.agents.agent_types import AgentType
-from app.plot import get_price_forecast_plot
-from app.utils import get_stock_price
-from app.pdf_parser import extract_text_from_pdf, parse_portfolio_from_text
-from app.chroma_store import save_to_vector_db
-from app.historical_suggestions import render_historical_suggestions
-from app.chroma_store import search_similar_portfolios
+from plot import get_price_forecast_plot
+from utils import get_stock_price
+from pdf_parser import extract_text_from_pdf, parse_portfolio_from_text
+from chroma_store import save_to_vector_db
+from historical_suggestions import render_historical_suggestions
+from chroma_store import search_similar_portfolios
 
 
 import requests
