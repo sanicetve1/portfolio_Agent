@@ -9,4 +9,11 @@ matplotlib
 PyPDF2
 scikit-learn
 joblib
+uvicorn
+pydantic
+python-dotenv
+pandas
+chromadb
+sqlalchemy
+
 
