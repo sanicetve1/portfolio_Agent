@@ -15,5 +15,6 @@ python-dotenv
 pandas
 chromadb
 sqlalchemy
+langchain
 
 
