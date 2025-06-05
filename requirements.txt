@@ -16,5 +16,7 @@ pandas
 chromadb
 sqlalchemy
 langchain
+langchain-openai
+
 
 
