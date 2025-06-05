@@ -209,7 +209,7 @@ def run_agent():
         gpt_result = {"error": "GPTAnalysis tool not found"}
 
     st.session_state.tool_trace.append({"tool": "GPTAnalysis", "input": input_data, "output": gpt_result})
-    render_historical_suggestions(search_similar_portfolios, portfolio_data)
+    #render_historical_suggestions(search_similar_portfolios, portfolio_data)
 
     # === Results Display ===
     st.success("✅ Agent completed its analysis.")
