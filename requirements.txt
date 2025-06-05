@@ -13,7 +13,7 @@ uvicorn
 pydantic
 python-dotenv
 pandas
-chromadb
+chromadb[all]
 sqlalchemy
 langchain
 langchain-openai
