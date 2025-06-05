@@ -1,15 +1,23 @@
-
+import os
 import json
 import hashlib
 from openai import OpenAI
 import chromadb
+from chromadb.config import Settings
 
-# Initialize OpenAI client (v1 API)
-client = OpenAI()
+# Ensure the persistence directory exists
+persist_path = "./chroma_db"
+os.makedirs(persist_path, exist_ok=True)
 
-# Initialize ChromaDB client with modern persistent config
-chroma = chromadb.PersistentClient(path="./chroma_db")
+# Initialize Chroma with persistent DuckDB config
+chroma = chromadb.Client(Settings(
+    chroma_db_impl="duckdb+parquet",
+    persist_directory=persist_path
+))
 collection = chroma.get_or_create_collection(name="portfolio_advice")
+
+# Initialize OpenAI client
+client = OpenAI()
 
 def compute_embedding(text: str) -> list:
     response = client.embeddings.create(
@@ -19,6 +27,8 @@ def compute_embedding(text: str) -> list:
     return response.data[0].embedding
 
 def save_to_vector_db(portfolio_data, gpt_summary):
+    if not gpt_summary:
+        return
     input_str = json.dumps(portfolio_data, sort_keys=True)
     input_hash = hashlib.sha256(input_str.encode()).hexdigest()
     embedding = compute_embedding(input_str)
