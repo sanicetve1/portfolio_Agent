@@ -12,7 +12,7 @@ os.makedirs(persist_path, exist_ok=True)
 # Initialize Chroma with persistent DuckDB config
 chroma = chromadb.Client(Settings(
     chroma_db_impl="duckdb+parquet",
-    persist_directory=persist_path
+    persist_directory=None
 ))
 collection = chroma.get_or_create_collection(name="portfolio_advice")
 
